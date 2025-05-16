@@ -28,14 +28,12 @@ ID = "answerer01"
 FREQUENCY_SEND_DATA = 0.01
 FREQUENCY_LATENCY_DATA = 0.1
 CODEC_CLOCKRATE = 90000
-FPS = 60
+FPS = 200
 # FRAME_SIZE = (640, 480)
 # FRAME_SIZE = (1920, 1440)
 FRAME_SIZE = (1280, 960)
 # FRAME_SIZE = (2560, 1920)
-os.makedirs("imgs", exist_ok=True)
 peer_connection = RTCPeerConnection()
-FPS_Value = 0
 # ===================== Vehicle Data Handler =====================#
 class VehicleDataHandler:
     """Handles processing of vehicle data"""
@@ -356,6 +354,7 @@ class Latency_Time():
             "Jitter": 0, 
             "SentVideoTime":0, 
             "ReceivedVideoTime":0,
+            "Encoding_Time":0,
             "CanBusData_Time": 0
         }
 
@@ -384,9 +383,13 @@ class Latency_Time():
         async with self.lock:
             return self.data["Jitter"]
     
+    async def get_Encoding_Time(self):
+        async with self.lock:
+            return self.data["Encoding_Time"]
+    
     async def get_Video_Latency(self):
         async with self.lock:
-            self.data["Video_Latency"] = self.data["SentVideoTime"] + self.data["ReceivedVideoTime"] + self.data["Jitter"]
+            self.data["Video_Latency"] = self.data["SentVideoTime"] + self.data["ReceivedVideoTime"] + self.data["Jitter"] + self.data["Encoding_Time"]
             return self.data["Video_Latency"]
         
 Latency_Data = Latency_Time()
@@ -490,6 +493,7 @@ async def run_webrtc():
                 data = json.loads(message)
                 await Latency_Data.set_data(SentVideoTime = data["VideoFrame_Time"])
                 await Latency_Data.set_data(CanBusData_Time = data["CanBusData_Time"])
+                await Latency_Data.set_data(Encoding_Time = data["Encoding_Time"])
         
     resp = requests.get(SIGNALING_SERVER_URL + "/get_offer")
     
